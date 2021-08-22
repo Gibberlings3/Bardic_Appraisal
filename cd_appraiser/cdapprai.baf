@@ -1,0 +1,17 @@
+IF
+	NumTimesTalkedTo(0)
+THEN
+	RESPONSE #100
+    SetGlobalTimer("summoned","LOCALS",6)
+		StartDialogNoSet(LastSummonerOf(Myself))
+END
+
+IF
+  OR(2)
+    !NumTimesTalkedTo(0)
+    GlobalTimerExpired("summoned","LOCALS")
+THEN
+	RESPONSE #100
+		DestroySelf()
+END
+

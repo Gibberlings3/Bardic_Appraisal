@@ -1,0 +1,1 @@
+OUTER_SET string = RESOLVE_STR_REF ( @%type% )

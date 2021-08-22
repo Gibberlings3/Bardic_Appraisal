@@ -1,0 +1,4 @@
+// 115, 117 only here because of the em-dash
+@115 = ~– Alignment restricted to any neutral.~ // last line of bard abilities in generic bard descript
+@117 = ~– Can appraise an item's value as an at-will ability.
+~ // extra line is intentional, don't remove

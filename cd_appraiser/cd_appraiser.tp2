@@ -1,0 +1,186 @@
+BACKUP ~cd_appraiser/backup~ // location to store files for
+SUPPORT ~http://gibberlings3.net/forums/index.php?showforum=34~ // URL displayed if install fails
+AUTO_EVAL_STRINGS
+
+ALWAYS
+
+  ACTION_IF ((FILE_EXISTS ~dlc/sod-dlc.zip~) OR (FILE_EXISTS ~sod-dlc.zip~)) THEN BEGIN FAIL @1001 END // DLC Merge check
+
+  // convert strings to UTF-8 for BGEE/BG2EE
+  ACTION_DEFINE_ARRAY cdreload BEGIN game_strings END
+  ACTION_DEFINE_ARRAY cdnoconvert BEGIN weidu game_strings_ee END // List of tra files that contain ONLY strings for the WeiDU installer and NOT game content
+  LAF HANDLE_CHARSETS INT_VAR infer_charsets = 1 STR_VAR tra_path = ~cd_appraiser/lang~ noconvert_array = cdnoconvert reload_array = cdreload END
+    
+END
+
+VERSION ~v1~
+
+README ~cd_appraiser/lang/%LANGUAGE%/readme-cd_appraiser.html~ ~cd_appraiser/readme-cd_appraiser.html~
+
+LANGUAGE
+  ~English~
+  ~en_us~
+  ~cd_appraiser/lang/en_us/game_strings.tra~
+  ~cd_appraiser/lang/en_us/weidu.tra~
+
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+/////                                                  \\\\\
+///// Stuff n' junk                                    \\\\\
+/////                                                  \\\\\
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+
+BEGIN @1000
+REQUIRE_PREDICATE FILE_EXISTS_IN_GAME ~kitlist.2da~ @1002
+LABEL ~cd_bardic_appraisal~
+
+MKDIR ~cd_appraiser/working~
+
+ACTION_IF GAME_IS ~bgee bg2ee eet iwdee~ BEGIN
+  LOAD_TRA ~cd_appraiser/lang/%LANGUAGE%/game_strings_ee.tra~
+END  
+
+OUTER_SET default_bard = 9562
+OUTER_SET valid_range = 78 // don't bother with item types > 77 until I see otherwise
+  
+ACTION_IF GAME_IS iwdee BEGIN
+  OUTER_SET default_bard = 37236
+END  
+
+OUTER_FOR (type = 0 ; type < valid_range ; ++type) BEGIN
+
+  COPY ~cd_appraiser/item_type_array.tpa~ ~cd_appraiser/working/item_type_array.tpa~ EVALUATE_BUFFER
+  REINCLUDE ~cd_appraiser/working/item_type_array.tpa~
+  OUTER_SPRINT $cd_valid_types("%type%") "%string%"  
+  
+END  
+
+ACTION_FOR_EACH invalid IN 28 33 BEGIN // exclude gold pieces amd h2h weapons
+  OUTER_SET $cd_valid_types("%invalid%") = 0
+END
+
+COPY ~cd_appraiser/cdapprai.bam~ ~override~
+     ~cd_appraiser/cdapprai.eff~ ~override~
+COPY ~cd_appraiser/cdapprai.cre~ ~override~
+  SAY 0x08 @112     
+  SAY 0x0c @112  
+
+COPY ~cd_appraiser/cdapprai.spl~ ~override~
+  SAY 0x08 @112     
+  SAY 0x0c @112        
+  SAY 0x50 @113     
+  SAY 0x54 @113
+
+COMPILE ~cd_appraiser/cdapprai.baf~
+
+ACTION_CLEAR_ARRAY cd_bard_clabs
+ACTION_DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN // start with base class tables
+  clabba01 => "%default_bard%" // generic bard abilities
+END
+  
+// add kit tables dynamically by reading kitlist
+COPY_EXISTING ~kitlist.2da~ ~override~
+  COUNT_2DA_ROWS 9 rows
+  FOR (index = 2 ; index < rows ; ++index) BEGIN // skip reserve row
+    READ_2DA_ENTRY index 8 9 class
+    PATCH_IF class = 5 BEGIN
+      READ_2DA_ENTRY index 4 9 desc
+      READ_2DA_ENTRY index 5 9 clab
+      DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN "%clab%" => "%desc%" END
+    END  
+  END
+  BUT_ONLY
+  
+ACTION_PHP_EACH cd_bard_clabs AS clab => desc_strref BEGIN 
+  
+  ACTION_IF FILE_EXISTS_IN_GAME ~%clab%.2da~ BEGIN 
+
+    APPEND ~%clab%.2da~ ~ABILITYX GA_CDAPPRAI CDREPLACE~ UNLESS ~GA_SPCL922~
+
+    COPY_EXISTING ~%clab%.2da~ ~override~
+      COUNT_2DA_COLS cols
+      FOR (index = 3 ; index < cols ; ++index) BEGIN
+        REPLACE_TEXTUALLY ~CDREPLACE~ ~**** CDREPLACE~
+      END
+      REPLACE_TEXTUALLY ~CDREPLACE~ ~****~
+      PRETTY_PRINT_2DA
+      BUT_ONLY
+ 
+    ACTION_GET_STRREF desc_strref desc
+    OUTER_PATCH_SAVE desc "%desc%" BEGIN
+      PATCH_IF desc_strref = default_bard BEGIN
+        SPRINT old @115 // main bard descript doesn't have 'disadvantages' line
+        SPRINT break ~~
+      END ELSE BEGIN  
+        SPRINT old @116
+        SPRINT break ~
+~
+      END  
+      SPRINT new @117
+      REPLACE_TEXTUALLY ~%new%~ ~~ // purge in case the text is already there
+      REPLACE_TEXTUALLY ~[%LNL%%MNL%%WNL%]*\([%LNL%%MNL%%WNL%]\)\(%old%\)~ ~\1%new%%break%\2~ // swap text
+    END
+    STRING_SET_EVALUATE desc_strref "%desc%"  
+
+  END
+  
+END        
+
+COMPILE ~cd_appraiser/appraise.d~
+
+COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
+  READ_LONG 0x18 flags ELSE 0
+  PATCH_IF ((flags & BIT2) = BIT2) BEGIN // if droppable
+    READ_SHORT 0x1c item_type
+    PATCH_IF ((item_type >= 0) AND (item_type < valid_range) AND ($cd_valid_types("%item_type%") != 0))BEGIN
+      SET type_name = $cd_valid_types("%item_type%")
+      READ_LONG 0x0c string
+      PATCH_IF NOT (string >= 0 && string < 9999999) BEGIN READ_LONG 0x08 string END // try unidentified name if identified name invalid
+      PATCH_IF (string >= 0 && string < 9999999) BEGIN // skip entirely if unidentified is also an invlaid string
+        SET critical_item = 0
+        READ_LONG 0x34 price
+        READ_LONG 0x0c string
+        PATCH_IF NOT (string >= 0 && string < 9999999) BEGIN READ_LONG 0x08 string END // use unidentified name if identified name invalid
+        PATCH_IF ((flags & BIT0) = BIT0) BEGIN SET critical_item = 1 END
+        DEFINE_ASSOCIATIVE_ARRAY ~cd_%item_type%_array~ BEGIN "%string%","%critical_item%","%SOURCE_RES%" => "%price%" END
+        PATCH_IF !FILE_EXISTS ~cd_appraiser/working/template_%item_type%.d~ BEGIN
+          INNER_ACTION BEGIN
+            COPY ~cd_appraiser/template.d~ ~cd_appraiser/working/template_%item_type%.d~
+              EVALUATE_BUFFER // should set item_type
+          END
+        END      
+      END
+    END  
+  END  
+  BUT_ONLY
+  
+OUTER_FOR (index = valid_range ; index >= 0 ; --index) BEGIN
+ 
+  ACTION_IF FILE_EXISTS ~cd_appraiser/working/template_%index%.d~ BEGIN
+    COPY ~cd_appraiser/working/template_%index%.d~ ~cd_appraiser/working/template_%index%.d~
+      PHP_EACH ~cd_%index%_array~ AS params => price BEGIN
+        PATCH_IF price BEGIN
+          SPRINT appraised @109
+          INNER_PATCH_SAVE appraised ~%appraised%~ BEGIN
+            REPLACE_TEXTUALLY EXACT_MATCH ~PRICE~ ~%price%~
+          END 
+        END ELSE BEGIN    
+          SPRINT appraised @110
+        END          
+        REPLACE_EVALUATE ~OR(\([0-9]+\))~ BEGIN  
+          SET or_count = (%MATCH1% + 1)
+        END ~OR(%or_count%) PartyHasItemIdentified("%params_2%")~  
+        REPLACE_TEXTUALLY ~\(//cd_insert_reply_here\)~ ~~~~~    IF ~PartyHasItemIdentified("%params_2%")~ THEN REPLY #%params_0% DO ~SetGlobal("cd_appraisal","LOCALS",%index%)~ GOTO cd_%params_2%
+\1~~~~~
+        REPLACE_TEXTUALLY ~\(//cd_insert_state_here\)~ ~~~~~  IF ~~ BEGIN cd_%params_2% SAY ~%appraised%~ 
+    IF ~~ THEN GOTO %params_1%
+  END  
+\1~~~~~
+      END
+
+    COMPILE ~cd_appraiser/working/template_%index%.d~
+    
+  END
+
+END  
