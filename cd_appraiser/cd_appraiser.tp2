@@ -8,12 +8,12 @@ ALWAYS
 
   // convert strings to UTF-8 for BGEE/BG2EE
   ACTION_DEFINE_ARRAY cdreload BEGIN game_strings END
-  ACTION_DEFINE_ARRAY cdnoconvert BEGIN weidu game_strings_ee END // List of tra files that contain ONLY strings for the WeiDU installer and NOT game content
+  ACTION_DEFINE_ARRAY cdnoconvert BEGIN weidu game_strings_ee game_strings_oiwd game_strings_iwd2 END
   LAF HANDLE_CHARSETS INT_VAR infer_charsets = 1 STR_VAR tra_path = ~cd_appraiser/lang~ noconvert_array = cdnoconvert reload_array = cdreload END
     
 END
 
-VERSION ~v1~
+VERSION ~v2~
 
 README ~cd_appraiser/lang/%LANGUAGE%/readme-cd_appraiser.html~ ~cd_appraiser/readme-cd_appraiser.html~
 

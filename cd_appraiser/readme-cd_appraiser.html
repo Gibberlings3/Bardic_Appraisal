@@ -30,8 +30,8 @@
     <div class="section">
       <p><strong><a href="http://www.gibberlings3.net/">A Gibberlings Three Mod</a><br />
         Authors: </strong><a href="https://www.gibberlings3.net/profile/8-camdawg/">CamDawg</a><br />
-      <strong>On the Web: </strong><a href="https://www.gibberlings3.net/mods/tweaks/lore">Project Page</a> and <a href="https://www.gibberlings3.net/forums/forum/28-miscellaneous-released-mods/">Forum</a></p>
-      <p><strong>Version 1<!-- - <a href="http://www.gibberlings3.net/forums/index.php?app=downloads&amp;showcat=36">Check
+      <strong>On the Web: </strong><a href="https://www.gibberlings3.net/mods/tweaks/appraisal">Project Page</a> and <a href="https://www.gibberlings3.net/forums/forum/28-miscellaneous-released-mods/">Forum</a></p>
+      <p><strong>Version 2<!-- - <a href="http://www.gibberlings3.net/forums/index.php?app=downloads&amp;showcat=36">Check
         for the most recent version</a>--></strong><br />
         <strong> Languages:</strong> English<br />
         <strong>Platforms: </strong>Windows, Mac <acronym title="Operating System 10">OS X</acronym>, and Linux<br />
@@ -51,9 +51,17 @@
     <div class="ribbon_triangle_h2-l"></div>
     <div class="ribbon_triangle_h2-r"></div>
     <div class="section">
-      <p>The Bardic Appraisal mod is designed to work with any variant of the Infinity Engine that supports kits--the orignial Baldur's Gate II (or conversion mods based upon it, such as BGT or Tutu) as well as the Enhanced Editions of Baldur's Gate, Baldur's Gate II, or Icewind Dale. </p>
-      <p>In terms of installation order, Bardic Appraisal should generally be installed  after any  mods that add items. The mod will scan all items at install time in order to build its appraisal routine, so any items which are added after this mod will not be included.</p>
+      <p>The Bardic Appraisal mod is designed to work with any variant of the Infinity Engine except for Planescape: Torment (both the originals and Enhanced Editions). </p>
+      <p>In terms of installation order, Bardic Appraisal should  be installed  after any  mods that add items. The mod will scan all items at install time in order to build its appraisal routine, so any items which are added after this mod will not be included.</p>
       <p>At present there is one minor issue: many books in the game are actually classified as 'miscellaneous' items so it's possible they will not show up under the 'book' category when appraising items. </p>
+      <p>There are a few notes for older platforms, specifically the original Baldur's Gate or original Icewind Dale:</p>
+      <ul>
+        <li>The mod will add skills to bards via AI scripting, so you'll need to turn on Party AI (even if momentarily) to get this new ability</li>
+        <li>Unlike more modern engines, all categories of items will be displayed when you use the ability, not just categories in which you currently possess an item. </li>
+        <li>For the same reason, you must go back to the top-level menu (with the categories) after appraising an item. </li>
+        <li>You can (accurately, and by their identified name) appraise unidentified items, as there's no specific trigger to check for this</li>
+      </ul>
+      <p>Newer  versions of the engine (original Baldur's Gate II, Icewind Dale II, or any of the Enhanced Editions) will not have these issues. </p>
     </div>
     <div class="ribbon_rectangle_h2"><a id="Bugs" name="Bugs"></a>
       <h2>Bug Reporting</h2>
@@ -85,7 +93,7 @@
       <p>Download the latest version of WeiDU for Linux from <a href="http://www.weidu.org/%7Ethebigg/">WeiDU.org</a> and copy WeiDU and WeInstall to /usr/bin. Following that, open a terminal, cd to your game installation directory, run tolower   and answer Y to both queries. You can avoid running the second option   (linux.ini) if you've already ran it once in the same directory. To save   time, the archive is already tolowered, so there's no need to run the   first option (lowercasing file names) either if you've extracted only   this mod since the last time you lowercased file names. If you're   unsure, running tolower and choosing both options is the safe bet.</p>
       <p>To install, run WeInstall cd_appraisal in your game folder. Then run wine BGMain.exe and start playing. </p>
       <p><strong> Note for Complete Uninstallation</strong><br />
-        In addition to the methods above for removing individual components, you can completely uninstall the mod using setup-cd_appraisal --uninstall at the command line to remove all components without wading through prompts. . </p>
+        In addition to the methods above for removing individual components, you can completely uninstall the mod using setup-cd_appraisal --uninstall at the command line to remove all components without wading through prompts.</p>
     </div>
     <div class="ribbon_rectangle_h2"><a id="Contents" name="Contents"></a>
       <h2>Contents</h2>
@@ -95,12 +103,13 @@
     <div class="section">
       <p>The Bardic Appraisal has one component. It adds a single, at-will ability for any bard, kitted or unkitted. The ability will prompt a dialogue which will allow you to appraise any identified item in the party's possession. Note that the prices reported by the skill <strong>will likely not reflect</strong> the actual value you can sell an item for due to the following factors:</p>
       <ul>
-        <li>Merchants have a fixed markup, e.g. most  will only offer to purchase the item for 60% of its value.</li>
+        <li>Merchants have a fixed markup, e.g. most  will only offer to purchase the item starting at 60% of its value.</li>
         <li>Merchants will also adjust prices up or down depending on your charisma and reputation.</li>
         <li>For charged items, merchants will pro-rate prices based on the remaining charges, e.g. you will only be able to sell a half-charged wand for half of the price of a fully-charged wand. This also means that merchants generally only offer 1 gold for an item that is fully discharged, including X-per-day items that have already been used.</li>
         <li>Merchants will also start to depreciate items after they have a certain amount of them, e.g. after a merchant has five short swords in stock, they will start offering you lower purchase prices for additional short swords.</li>
+        <li>Items that are flagged as plot-critical, generally, cannot be sold except in a handful of stores (the BG series has no stores that will take them). When appraised, you'll get feedback indiciating that the item is special and that you may not be able to sell it.</li>
       </ul>
-</div>
+    </div>
     <div class="ribbon_rectangle_h2"><a id="Contact" name="Contact"></a>
       <h2>Contact Information</h2>
     </div>
@@ -152,7 +161,14 @@
     <div class="ribbon_triangle_h2-l"></div>
     <div class="ribbon_triangle_h2-r"></div>
     <div class="section">
-      <p><strong>Version  1 - August 22, 2021</strong></p>
+      <p><strong>Version  2 - August 22, 2021</strong></p>
+      <ul>
+        
+        <li>Added support for Icewind Dale II as well as the original versions of Baldur's Gate and Icewind Dale. The mod now works on every game that has bards in it. </li>
+        <li>Fixed a bug that prevented installation if mod items with an exclamation point were present</li>
+        <li>Fixed typos</li>
+      </ul>
+      <p><strong>Version  1 - August 21, 2021</strong></p>
       <ul>
         
         <li>Initial release</li>

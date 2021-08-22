@@ -6,7 +6,7 @@ call "%~dp0..\ModPackaging\utilities\ie_games.bat"
 
 REM /* MODIFY: set the values of the 3 variables below to reflect the current mod version */
 set "mod_name=Bardic Appraisal"
-set mod_version=v1
+set mod_version=v2
 set mod_folder=cd_appraiser
 
 REM /* MODIFY: list here which IE games the mod is compatible with, from this list of possibilities: */
