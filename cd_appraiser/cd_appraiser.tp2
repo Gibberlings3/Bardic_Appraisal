@@ -50,7 +50,7 @@ END
 
 OUTER_FOR (type = 0 ; type < valid_range ; ++type) BEGIN
 
-  COPY ~cd_appraiser/item_type_array.tpa~ ~cd_appraiser/working/item_type_array.tpa~ EVALUATE_BUFFER
+  COPY ~cd_appraiser/files/item_type_array.tpa~ ~cd_appraiser/working/item_type_array.tpa~ EVALUATE_BUFFER
   REINCLUDE ~cd_appraiser/working/item_type_array.tpa~
   OUTER_SPRINT $cd_valid_types("%type%") "%string%"  
   
@@ -60,19 +60,19 @@ ACTION_FOR_EACH invalid IN 28 33 BEGIN // exclude gold pieces amd h2h weapons
   OUTER_SET $cd_valid_types("%invalid%") = 0
 END
 
-COPY ~cd_appraiser/cdapprai.bam~ ~override~
-     ~cd_appraiser/cdapprai.eff~ ~override~
-COPY ~cd_appraiser/cdapprai.cre~ ~override~
+COPY ~cd_appraiser/files/cdapprai.bam~ ~override~
+     ~cd_appraiser/files/cdapprai.eff~ ~override~
+COPY ~cd_appraiser/files/cdapprai.cre~ ~override~
   SAY 0x08 @112     
   SAY 0x0c @112  
 
-COPY ~cd_appraiser/cdapprai.spl~ ~override~
+COPY ~cd_appraiser/files/cdapprai.spl~ ~override~
   SAY 0x08 @112     
   SAY 0x0c @112        
   SAY 0x50 @113     
   SAY 0x54 @113
 
-COMPILE ~cd_appraiser/cdapprai.baf~
+COMPILE ~cd_appraiser/files/cdapprai.baf~
 
 ACTION_CLEAR_ARRAY cd_bard_clabs
 ACTION_DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN // start with base class tables
@@ -127,7 +127,7 @@ ACTION_PHP_EACH cd_bard_clabs AS clab => desc_strref BEGIN
   
 END        
 
-COMPILE ~cd_appraiser/appraise.d~
+COMPILE ~cd_appraiser/files/appraise.d~
 
 COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
   READ_LONG 0x18 flags ELSE 0
@@ -146,7 +146,7 @@ COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
         DEFINE_ASSOCIATIVE_ARRAY ~cd_%item_type%_array~ BEGIN "%string%","%critical_item%","%SOURCE_RES%" => "%price%" END
         PATCH_IF !FILE_EXISTS ~cd_appraiser/working/template_%item_type%.d~ BEGIN
           INNER_ACTION BEGIN
-            COPY ~cd_appraiser/template.d~ ~cd_appraiser/working/template_%item_type%.d~
+            COPY ~cd_appraiser/files/template.d~ ~cd_appraiser/working/template_%item_type%.d~
               EVALUATE_BUFFER // should set item_type
           END
         END      
