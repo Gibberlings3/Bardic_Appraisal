@@ -1,0 +1,14 @@
+
+  @6 = ~Bracers~
+ @17 = ~Maces~
+ @19 = ~Short swords~
+ @36 = ~Broken gear~
+ @37 = ~Broken shields~
+ @38 = ~Broken weapon~
+ @47 = ~Tower shields~
+ @49 = ~Large shields~
+ @57 = ~Great swords~
+ @73 = ~Gauntlets~
+ 
+@117 = ~* Can appraise an item's value as an at-will ability.
+~ // identical to main file, except with an asterisk instead of a dash

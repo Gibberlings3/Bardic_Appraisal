@@ -1,9 +1,7 @@
-EXTEND_TOP cdapprai 0
-  IF ~Global("cd_appraisal","LOCALS",%item_type%)~ THEN REPLY @114 GOTO cd_item_type_%item_type%
-END
+//trans_item_type
 
 EXTEND_TOP cdapprai 2
-  IF ~OR(0)~ THEN REPLY #%type_name% GOTO cd_item_type_%item_type%
+  IF ~%or_trigger%~ THEN REPLY #%type_name% GOTO cd_item_type_%item_type%
 END
 
 APPEND cdapprai

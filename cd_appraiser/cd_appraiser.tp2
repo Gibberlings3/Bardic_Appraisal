@@ -26,20 +26,31 @@ LANGUAGE
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 /////                                                  \\\\\
-///// Stuff n' junk                                    \\\\\
+///// Bardic Appraisal                                 \\\\\
 /////                                                  \\\\\
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 
 BEGIN @1000
-REQUIRE_PREDICATE FILE_EXISTS_IN_GAME ~kitlist.2da~ @1002
+REQUIRE_PREDICATE !GAME_IS ~pst pstee~ @1002
 LABEL ~cd_bardic_appraisal~
 
-MKDIR ~cd_appraiser/working~
+MKDIR ~weidu_external/cd_appraiser~
 
+// strings with utf-8 characters for matching
 ACTION_IF GAME_IS ~bgee bg2ee eet iwdee~ BEGIN
   LOAD_TRA ~cd_appraiser/lang/%LANGUAGE%/game_strings_ee.tra~
-END  
+END 
+
+// oiwd has slightly different category names
+ACTION_IF GAME_IS ~iwd how totlm~ BEGIN
+  LOAD_TRA ~cd_appraiser/lang/%LANGUAGE%/game_strings_oiwd.tra~
+END 
+
+// oiwd has slightly different category names
+ACTION_IF GAME_IS ~iwd2~ BEGIN
+  LOAD_TRA ~cd_appraiser/lang/%LANGUAGE%/game_strings_iwd2.tra~
+END 
 
 OUTER_SET default_bard = 9562
 OUTER_SET valid_range = 78 // don't bother with item types > 77 until I see otherwise
@@ -50,103 +61,214 @@ END
 
 OUTER_FOR (type = 0 ; type < valid_range ; ++type) BEGIN
 
-  COPY ~cd_appraiser/files/item_type_array.tpa~ ~cd_appraiser/working/item_type_array.tpa~ EVALUATE_BUFFER
-  REINCLUDE ~cd_appraiser/working/item_type_array.tpa~
+  COPY ~cd_appraiser/files/item_type_array.tpa~ ~weidu_external/cd_appraiser/item_type_array.tpa~ EVALUATE_BUFFER
+  REINCLUDE ~weidu_external/cd_appraiser/item_type_array.tpa~
   OUTER_SPRINT $cd_valid_types("%type%") "%string%"  
   
-END  
+END   
 
 ACTION_FOR_EACH invalid IN 28 33 BEGIN // exclude gold pieces amd h2h weapons
   OUTER_SET $cd_valid_types("%invalid%") = 0
 END
 
-COPY ~cd_appraiser/files/cdapprai.bam~ ~override~
-     ~cd_appraiser/files/cdapprai.eff~ ~override~
-COPY ~cd_appraiser/files/cdapprai.cre~ ~override~
+ACTION_IF GAME_IS ~iwd how totlm~ BEGIN
+
+  COPY ~cd_appraiser/files/cdapprai_iwd.bam~ ~override/cdapprai.bam~ // no 'rock' background
+  COPY ~cd_appraiser/files/cdapprai_v9.cre~  ~override/cdapprai.cre~
+
+  // since no OR to suppress categories, be a little more strict with the categories
+  ACTION_FOR_EACH invalid IN 12 36 37 38 42 55 BEGIN // exclude bg shield category, broken gear categories
+    OUTER_SET $cd_valid_types("%invalid%") = 0
+  END
+
+END ELSE BEGIN
+
+  ACTION_IF GAME_IS ~iwd2~ BEGIN
+  
+    COPY ~cd_appraiser/files/cdapprai_v22.cre~ ~override/cdapprai.cre~
+         ~cd_appraiser/files/cdapprai_iwd.bam~ ~override/cdapprai.bam~ // no 'rock' background
+    
+  END ELSE BEGIN  
+
+    COPY ~cd_appraiser/files/cdapprai.cre~ ~override~
+         ~cd_appraiser/files/cdapprai.bam~ ~override~
+
+  END
+  
+END  
+
+COPY_EXISTING ~cdapprai.cre~ ~override~
   SAY 0x08 @112     
-  SAY 0x0c @112  
+  SAY 0x0c @112 
 
-COPY ~cd_appraiser/files/cdapprai.spl~ ~override~
-  SAY 0x08 @112     
-  SAY 0x0c @112        
-  SAY 0x50 @113     
-  SAY 0x54 @113
+// if game supports OR(x), use it
+OUTER_SPRINT or_trigger ~~  
+ACTION_IF RESOURCE_CONTAINS ~trigger.ids~ ~[ %TAB%]OR(~ BEGIN
+  OUTER_SPRINT or_trigger ~OR(0)~
+END  
 
-COMPILE ~cd_appraiser/files/cdapprai.baf~
+// if game supports PartyHasItemIdentified, use it
+OUTER_SPRINT item_trigger ~PartyHasItem~ 
+ACTION_IF RESOURCE_CONTAINS ~trigger.ids~ ~[ %TAB%]PartyHasItemIdentified(~ BEGIN
+  OUTER_SPRINT item_trigger ~PartyHasItemIdentified~
+END  
 
-ACTION_CLEAR_ARRAY cd_bard_clabs
-ACTION_DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN // start with base class tables
-  clabba01 => "%default_bard%" // generic bard abilities
+// games without LOCALS variables have clunkier dialogue
+OUTER_SPRINT text_another_item @103
+OUTER_SPRINT action_set_locals ~~~~~ DO ~SetGlobal("cd_appraisal","LOCALS",%index%)~ ~~~~~
+ACTION_IF GAME_IS ~bg1 totsc iwd how totlm~ BEGIN // games without LOCALS
+
+  OUTER_SPRINT text_another_item @118
+  OUTER_SPRINT action_set_locals ~~
+  COPY ~cd_appraiser/files/template.d~ ~weidu_external/cd_appraiser/template.d~ 
+  
+END ELSE BEGIN
+
+  COPY ~cd_appraiser/files/template.d~ ~weidu_external/cd_appraiser/template.d~ 
+    REPLACE_TEXTUALLY ~//trans_item_type~ ~~~~~EXTEND_TOP cdapprai 0
+  IF ~Global("cd_appraisal","LOCALS",%item_type%)~ THEN REPLY @114 GOTO cd_item_type_%item_type%
+END~~~~~
+
 END
-  
-// add kit tables dynamically by reading kitlist
-COPY_EXISTING ~kitlist.2da~ ~override~
-  COUNT_2DA_ROWS 9 rows
-  FOR (index = 2 ; index < rows ; ++index) BEGIN // skip reserve row
-    READ_2DA_ENTRY index 8 9 class
-    PATCH_IF class = 5 BEGIN
-      READ_2DA_ENTRY index 4 9 desc
-      READ_2DA_ENTRY index 5 9 clab
-      DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN "%clab%" => "%desc%" END
-    END  
-  END
-  BUT_ONLY
-  
-ACTION_PHP_EACH cd_bard_clabs AS clab => desc_strref BEGIN 
-  
-  ACTION_IF FILE_EXISTS_IN_GAME ~%clab%.2da~ BEGIN 
 
-    APPEND ~%clab%.2da~ ~ABILITYX GA_CDAPPRAI CDREPLACE~ UNLESS ~GA_SPCL922~
+// add ability to bard using clab tables if available, otherwise script it
+ACTION_IF !FILE_EXISTS_IN_GAME ~kitlist.2da~ BEGIN // basically, oiwd and obg
+  
+  COPY_EXISTING ~cdapprai.cre~ ~override~
+    LPF DELETE_EFFECT INT_VAR match_opcode = 287 END
+    WRITE_LONG 0x28 0xd300 // animation: bird
+  
+  COPY ~cd_appraiser/files/cdapprai_bg.baf~ ~weidu_external/cd_appraiser/cdapprai.baf~
 
-    COPY_EXISTING ~%clab%.2da~ ~override~
-      COUNT_2DA_COLS cols
-      FOR (index = 3 ; index < cols ; ++index) BEGIN
-        REPLACE_TEXTUALLY ~CDREPLACE~ ~**** CDREPLACE~
-      END
-      REPLACE_TEXTUALLY ~CDREPLACE~ ~****~
-      PRETTY_PRINT_2DA
-      BUT_ONLY
- 
-    ACTION_GET_STRREF desc_strref desc
-    OUTER_PATCH_SAVE desc "%desc%" BEGIN
-      PATCH_IF desc_strref = default_bard BEGIN
-        SPRINT old @115 // main bard descript doesn't have 'disadvantages' line
-        SPRINT break ~~
-      END ELSE BEGIN  
-        SPRINT old @116
-        SPRINT break ~
-~
-      END  
-      SPRINT new @117
-      REPLACE_TEXTUALLY ~%new%~ ~~ // purge in case the text is already there
-      REPLACE_TEXTUALLY ~[%LNL%%MNL%%WNL%]*\([%LNL%%MNL%%WNL%]\)\(%old%\)~ ~\1%new%%break%\2~ // swap text
+  // also lack RES actions for arbitrary spell names
+  ADD_SPELL ~cd_appraiser/files/cdapprai.spl~ 3 1 CD_BARDIC_APPRAISAL    
+    SPRINT CD_BARDIC_APPRAISAL_res ~%DEST_RES%~
+    LPF ALTER_EFFECT STR_VAR match_resource = cdapprai resource = EVAL ~%CD_BARDIC_APPRAISAL_res%~ END
+    LPF ALTER_EFFECT INT_VAR match_opcode = 177 opcode = 67 STR_VAR resource = cdapprai END
+    SAY 0x08 @112     
+    SAY 0x0c @112        
+    SAY 0x50 @113     
+    SAY 0x54 @113
+    
+  ADD_SPELL ~cd_appraiser/files/cd_addbg.spl~ 3 1 CD_ADD_BARDIC_APPRAISAL
+    WRITE_ASCIIE 0xae ~%CD_BARDIC_APPRAISAL_res%~ #8
+    
+  ACTION_FOR_EACH script IN dplayer dplayer2 dplayer3 BEGIN
+  
+    ACTION_IF FILE_EXISTS_IN_GAME ~%script%.bcs~ BEGIN
+  
+      EXTEND_BOTTOM ~%script%.bcs~ ~cd_appraiser/files/dplayer.baf~
+      
     END
-    STRING_SET_EVALUATE desc_strref "%desc%"  
 
+  END    
+
+END ELSE BEGIN
+  
+  COPY ~cd_appraiser/files/cdapprai.baf~ ~weidu_external/cd_appraiser/cdapprai.baf~
+
+  ACTION_IF GAME_IS ~iwd2~ BEGIN // no effs for iwd2, need to be a SPIN
+
+    COPY ~cd_appraiser/files/cdapprai_v2.spl~ ~override/cdapprai.spl~ 
+    
+    COPY_EXISTING ~listinnt.2da~ ~override~
+      COUNT_2DA_ROWS 2 count
+      READ_2DA_ENTRY (count - 1) 0 2 entry
+      SET entry += 1
+      
+    APPEND ~listinnt.2da~ ~%entry% cdapprai~  
+  
+  END ELSE BEGIN
+  
+    COPY ~cd_appraiser/files/cdapprai.eff~ ~override~
+         ~cd_appraiser/files/cdapprai.spl~ ~override~
+    
+  END  
+  
+  COPY_EXISTING ~cdapprai.spl~ ~override~
+    SAY 0x08 @112     
+    SAY 0x0c @112        
+    SAY 0x50 @113     
+    SAY 0x54 @113       
+    SPRINT CD_BARDIC_APPRAISAL_res ~%DEST_RES%~
+
+  ACTION_CLEAR_ARRAY cd_bard_clabs
+  ACTION_DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN // start with base class tables
+    clabba01 => "%default_bard%" // generic bard abilities
   END
   
-END        
+  ACTION_IF !GAME_IS ~iwd2~ BEGIN  
+      
+    // add kit tables dynamically by reading kitlist
+    COPY_EXISTING ~kitlist.2da~ ~override~
+      COUNT_2DA_ROWS 9 rows
+      FOR (index = 2 ; index < rows ; ++index) BEGIN // skip reserve row
+        READ_2DA_ENTRY index 8 9 class
+        PATCH_IF class = 5 BEGIN
+          READ_2DA_ENTRY index 4 9 desc
+          READ_2DA_ENTRY index 5 9 clab
+          DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN "%clab%" => "%desc%" END
+        END  
+      END
+      BUT_ONLY
+  
+  END  
+      
+  ACTION_PHP_EACH cd_bard_clabs AS clab => desc_strref BEGIN 
+    
+    ACTION_IF FILE_EXISTS_IN_GAME ~%clab%.2da~ BEGIN 
+      APPEND ~%clab%.2da~ ~ABILITYX GA_cdapprai CDREPLACE~ UNLESS ~GA_CDAPPRAI~
 
-COMPILE ~cd_appraiser/files/appraise.d~
+      COPY_EXISTING ~%clab%.2da~ ~override~
+        COUNT_2DA_COLS cols
+        FOR (index = 3 ; index < cols ; ++index) BEGIN
+          REPLACE_TEXTUALLY ~CDREPLACE~ ~**** CDREPLACE~
+        END
+        REPLACE_TEXTUALLY ~CDREPLACE~ ~****~
+        PRETTY_PRINT_2DA
+        BUT_ONLY
+   
+      ACTION_GET_STRREF desc_strref desc
+      OUTER_PATCH_SAVE desc "%desc%" BEGIN
+        PATCH_IF ((desc_strref = default_bard) AND (!GAME_IS ~iwd2~)) BEGIN
+          SPRINT old @115 // main bard descript doesn't have 'disadvantages' line
+          SPRINT break ~~
+        END ELSE BEGIN  
+          SPRINT old @116
+          SPRINT break ~
+~ // extra line is intentional
+        END  
+        SPRINT new @117
+        REPLACE_TEXTUALLY ~%new%~ ~~ // purge in case the text is already there
+        REPLACE_TEXTUALLY ~[%LNL%%MNL%%WNL%]*\([%LNL%%MNL%%WNL%]\)\(%old%\)~ ~\1%new%%break%\2~ // swap text
+      END
+      STRING_SET_EVALUATE desc_strref "%desc%"  
+
+    END
+    
+  END  
+  
+END  
+
+COMPILE ~weidu_external/cd_appraiser/cdapprai.baf~
+        ~cd_appraiser/files/appraise.d~
 
 COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
   READ_LONG 0x18 flags ELSE 0
   PATCH_IF ((flags & BIT2) = BIT2) BEGIN // if droppable
     READ_SHORT 0x1c item_type
-    PATCH_IF ((item_type >= 0) AND (item_type < valid_range) AND ($cd_valid_types("%item_type%") != 0))BEGIN
+    PATCH_IF ((item_type >= 0) AND (item_type < valid_range) AND ($cd_valid_types("%item_type%") != 0))BEGIN // skip item types that aren't covered
       SET type_name = $cd_valid_types("%item_type%")
       READ_LONG 0x0c string
       PATCH_IF NOT (string >= 0 && string < 9999999) BEGIN READ_LONG 0x08 string END // try unidentified name if identified name invalid
-      PATCH_IF (string >= 0 && string < 9999999) BEGIN // skip entirely if unidentified is also an invlaid string
-        SET critical_item = 0
+      PATCH_IF (string >= 0 && string < 9999999) BEGIN                               // skip entirely if unidentified is also an invlaid string
         READ_LONG 0x34 price
-        READ_LONG 0x0c string
-        PATCH_IF NOT (string >= 0 && string < 9999999) BEGIN READ_LONG 0x08 string END // use unidentified name if identified name invalid
+        SET critical_item = 0
         PATCH_IF ((flags & BIT0) = BIT0) BEGIN SET critical_item = 1 END
         DEFINE_ASSOCIATIVE_ARRAY ~cd_%item_type%_array~ BEGIN "%string%","%critical_item%","%SOURCE_RES%" => "%price%" END
-        PATCH_IF !FILE_EXISTS ~cd_appraiser/working/template_%item_type%.d~ BEGIN
+        PATCH_IF !FILE_EXISTS ~weidu_external/cd_appraiser/template_%item_type%.d~ BEGIN
           INNER_ACTION BEGIN
-            COPY ~cd_appraiser/files/template.d~ ~cd_appraiser/working/template_%item_type%.d~
+            COPY ~weidu_external/cd_appraiser/template.d~ ~weidu_external/cd_appraiser/template_%item_type%.d~
               EVALUATE_BUFFER // should set item_type
           END
         END      
@@ -157,21 +279,21 @@ COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
   
 OUTER_FOR (index = valid_range ; index >= 0 ; --index) BEGIN
  
-  ACTION_IF FILE_EXISTS ~cd_appraiser/working/template_%index%.d~ BEGIN
-    COPY ~cd_appraiser/working/template_%index%.d~ ~cd_appraiser/working/template_%index%.d~
+  ACTION_IF FILE_EXISTS ~weidu_external/cd_appraiser/template_%index%.d~ BEGIN
+    COPY ~weidu_external/cd_appraiser/template_%index%.d~ ~weidu_external/cd_appraiser/template_%index%.d~
       PHP_EACH ~cd_%index%_array~ AS params => price BEGIN
-        PATCH_IF price BEGIN
+        PATCH_IF price BEGIN // if price != 0, create string for it
           SPRINT appraised @109
           INNER_PATCH_SAVE appraised ~%appraised%~ BEGIN
             REPLACE_TEXTUALLY EXACT_MATCH ~PRICE~ ~%price%~
           END 
         END ELSE BEGIN    
-          SPRINT appraised @110
+          SPRINT appraised @110 // otherwise use 'no value' line
         END          
-        REPLACE_EVALUATE ~OR(\([0-9]+\))~ BEGIN  
+        REPLACE_EVALUATE ~OR(\([0-9]+\))~ BEGIN // this will match (and therefore do) nothing on games w/o OR triggers  
           SET or_count = (%MATCH1% + 1)
-        END ~OR(%or_count%) PartyHasItemIdentified("%params_2%")~  
-        REPLACE_TEXTUALLY ~\(//cd_insert_reply_here\)~ ~~~~~    IF ~PartyHasItemIdentified("%params_2%")~ THEN REPLY #%params_0% DO ~SetGlobal("cd_appraisal","LOCALS",%index%)~ GOTO ~cd_%params_2%~
+        END ~OR(%or_count%) %item_trigger%("%params_2%")~  
+        REPLACE_TEXTUALLY ~\(//cd_insert_reply_here\)~ ~~~~~    IF ~%item_trigger%("%params_2%")~ THEN REPLY #%params_0% %action_set_locals% GOTO ~cd_%params_2%~
 \1~~~~~
         REPLACE_TEXTUALLY ~\(//cd_insert_state_here\)~ ~~~~~  IF ~~ BEGIN ~cd_%params_2%~ SAY ~%appraised%~ 
     IF ~~ THEN GOTO %params_1%
@@ -179,7 +301,7 @@ OUTER_FOR (index = valid_range ; index >= 0 ; --index) BEGIN
 \1~~~~~
       END
 
-    COMPILE ~cd_appraiser/working/template_%index%.d~
+    COMPILE ~weidu_external/cd_appraiser/template_%index%.d~ EVALUATE_BUFFER
     
   END
 

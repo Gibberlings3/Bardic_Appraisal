@@ -2,14 +2,19 @@ IF
 	NumTimesTalkedTo(0)
 THEN
 	RESPONSE #100
-    SetGlobalTimer("summoned","LOCALS",6)
+    StartTimer(3,6)
 		StartDialogueNoSet([PC])
 END
 
 IF
-  OR(2)
-    !NumTimesTalkedTo(0)
-    GlobalTimerExpired("summoned","LOCALS")
+  !NumTimesTalkedTo(0)
+THEN
+	RESPONSE #100
+		DestroySelf()
+END
+
+IF
+  TimerExpired(3)
 THEN
 	RESPONSE #100
 		DestroySelf()

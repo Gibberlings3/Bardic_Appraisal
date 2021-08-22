@@ -1,0 +1,7 @@
+IF
+	Class(Myself,BARD)
+  !HaveSpell(CD_BARDIC_APPRAISAL)
+THEN
+	RESPONSE #100
+    ApplySpell(Myself,CD_ADD_BARDIC_APPRAISAL)
+END

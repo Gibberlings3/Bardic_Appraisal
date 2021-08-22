@@ -45,17 +45,17 @@
  @44 = ~Clubs~
  @45 = ~Female bodies~
  @46 = ~Keys~
- @47 = ~Large Shields~
+ @47 = ~Large shields~
  @48 = ~Male bodies~
- @49 = ~Medium Shields~
+ @49 = ~Medium shields~
  @50 = ~Notes~
  @51 = ~Rods~
  @52 = ~Skulls~
- @53 = ~Small Shields~
+ @53 = ~Small shields~
  @54 = ~Spider bodies~
  @55 = ~Telescopes~
  @56 = ~Drinks~
- @57 = ~Great swords~
+ @57 = ~Two-handed and bastard swords~
  @58 = ~Bags~
  @59 = ~Furs and pelts~
  @60 = ~Leather armor~
@@ -96,3 +96,4 @@
 @116 = ~Disadvantages:~ // from bard kit descriptions
 @117 = ~-  Can appraise an item's value as an at-will ability.
 ~ // extra line is intentional, don't remove
+@118 = ~Yes, I have another item.~

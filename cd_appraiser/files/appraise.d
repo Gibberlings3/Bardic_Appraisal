@@ -1,7 +1,7 @@
 BEGIN ~cdapprai~
 
   IF ~~ THEN BEGIN 0 SAY @102 // Is there another item you need appraised?
-    IF ~~ THEN REPLY @103  GOTO 2 // Yes, I have another item.
+    IF ~~ THEN REPLY ~%text_another_item%~ GOTO 2 // Yes, I have another item.
     IF ~~ THEN REPLY @104 GOTO 3 // No, that will be all for now.
   END
 
