@@ -177,7 +177,58 @@ END ELSE BEGIN
       SET entry += 1
       
     APPEND ~listinnt.2da~ ~%entry% cdapprai~  
+    
+    ACTION_BASH_FOR ~characters~ ~^.+\chr$~ BEGIN // fix existing chr files
+    
+      COPY ~%BASH_FOR_FILESPEC%~ ~%BASH_FOR_FILESPEC%~
+        READ_LONG 0x28 cre_off
+        READ_BYTE (cre_off + 0x8c) bard_level
+        PATCH_IF bard_level BEGIN
+          READ_LONG  (cre_off + 0x5fa) abil_off
+          READ_LONG  (cre_off + 0x5fe) abil_num
+          SET add_ability = 1
+          FOR (index = 0 ; index < abil_num ; ++index) BEGIN
+            READ_LONG (cre_off + abil_off) + (index * 0x10) entry_check
+            PATCH_PRINT ~checking %entry_check% on %BASH_FOR_FILESPEC%~
+            PATCH_IF entry_check = entry BEGIN 
+              SET add_ability = 0 // don't add, already present
+              SET index = abil_num // kill loop 
+            END
+          END
+          PATCH_IF add_ability BEGIN
+            PATCH_PRINT ~adding ability to %BASH_FOR_FILESPEC%~
+            WRITE_LONG (cre_off + 0x5fe) (THIS + 1) // add an ability
+            // fix offsets for adding abilities
+            FOR (offset = (cre_off + 0x3ba) ; offset < (cre_off + 0x4b3) ; offset = offset + 0x04) BEGIN // spell list offsets
+              READ_LONG offset offset_check
+              PATCH_IF offset_check > abil_off BEGIN
+                WRITE_LONG offset (THIS + 0x10)
+              END
+            END  
+            FOR (offset = (cre_off + 0x5b2) ; offset < (cre_off + 0x5d3) ; offset = offset + 0x04) BEGIN // domain offsets
+              READ_LONG offset offset_check
+              PATCH_IF offset_check > abil_off BEGIN
+                WRITE_LONG offset (THIS + 0x10)
+              END
+            END     
+            PATCH_FOR_EACH offset IN 0x602 0x60a 0x612 0x616 0x61e BEGIN
+              READ_LONG (cre_off + offset) offset_check
+              PATCH_IF offset_check > abil_off BEGIN
+                WRITE_LONG (cre_off + offset) (THIS + 0x10)
+              END
+            END      
+            WRITE_LONG 0x2c (THIS + 0x10) // cre structure size
+            WRITE_LONG ((cre_off + abil_off) + 0x00 + (0x10 * abil_num)) (THIS +1)
+            WRITE_LONG ((cre_off + abil_off) + 0x04 + (0x10 * abil_num)) (THIS +1)
+            INSERT_BYTES (cre_off + abil_off) 0x10
+              WRITE_LONG ((cre_off + abil_off) + 0x00) entry // from listinnt value above
+              WRITE_LONG ((cre_off + abil_off) + 0x04) 1     // num memorizable
+              WRITE_LONG ((cre_off + abil_off) + 0x08) 1     // num remaining
+          END // end check for existing ability    
+        END // end bard_level check
+        BUT_ONLY   
   
+    END 
   END ELSE BEGIN
   
     COPY ~cd_appraiser/files/cdapprai.eff~ ~override~
