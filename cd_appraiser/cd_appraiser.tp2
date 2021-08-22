@@ -171,9 +171,9 @@ OUTER_FOR (index = valid_range ; index >= 0 ; --index) BEGIN
         REPLACE_EVALUATE ~OR(\([0-9]+\))~ BEGIN  
           SET or_count = (%MATCH1% + 1)
         END ~OR(%or_count%) PartyHasItemIdentified("%params_2%")~  
-        REPLACE_TEXTUALLY ~\(//cd_insert_reply_here\)~ ~~~~~    IF ~PartyHasItemIdentified("%params_2%")~ THEN REPLY #%params_0% DO ~SetGlobal("cd_appraisal","LOCALS",%index%)~ GOTO cd_%params_2%
+        REPLACE_TEXTUALLY ~\(//cd_insert_reply_here\)~ ~~~~~    IF ~PartyHasItemIdentified("%params_2%")~ THEN REPLY #%params_0% DO ~SetGlobal("cd_appraisal","LOCALS",%index%)~ GOTO ~cd_%params_2%~
 \1~~~~~
-        REPLACE_TEXTUALLY ~\(//cd_insert_state_here\)~ ~~~~~  IF ~~ BEGIN cd_%params_2% SAY ~%appraised%~ 
+        REPLACE_TEXTUALLY ~\(//cd_insert_state_here\)~ ~~~~~  IF ~~ BEGIN ~cd_%params_2%~ SAY ~%appraised%~ 
     IF ~~ THEN GOTO %params_1%
   END  
 \1~~~~~
