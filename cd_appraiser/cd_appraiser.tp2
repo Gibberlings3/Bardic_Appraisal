@@ -39,7 +39,33 @@ MKDIR ~weidu_external/cd_appraiser~
 
 // strings with utf-8 characters for matching
 ACTION_IF GAME_IS ~bgee bg2ee eet iwdee~ BEGIN
+  
   LOAD_TRA ~cd_appraiser/lang/%LANGUAGE%/game_strings_ee.tra~
+  
+  ACTION_IF GAME_IS ~iwdee~ BEGIN
+  
+    // check for bards in default party
+    COPY_EXISTING ~howparty.2da~ ~override~
+                  ~iwdparty.2da~ ~override~
+      REPLACE_EVALUATE ~^\([0-5][ %TAB%]+\)\([^ %TAB%%LNL%%MNL%%WNL%]+\)~ BEGIN
+        DEFINE_ASSOCIATIVE_ARRAY cd_iwd_premade BEGIN "%MATCH2%" => 0 END
+      END ~%MATCH1%%MATCH2%~
+      BUT_ONLY
+
+    ACTION_PHP_EACH cd_iwd_premade AS file => foo BEGIN
+      
+      COPY_EXISTING ~%file%.cre~ ~override~
+        READ_BYTE 0x273 class
+        PATCH_IF class = 5 BEGIN
+          ADD_KNOWN_SPELL     ~cdapprai~ #0 ~innate~
+          ADD_MEMORIZED_SPELL ~cdapprai~ #0 ~innate~         
+        END
+        BUT_ONLY IF_EXISTS
+    
+    END
+
+  END
+  
 END 
 
 // oiwd has slightly different category names
