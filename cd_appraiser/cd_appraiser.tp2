@@ -1,21 +1,36 @@
-BACKUP ~cd_appraiser/backup~ // location to store files for
-SUPPORT ~http://gibberlings3.net/forums/index.php?showforum=34~ // URL displayed if install fails
+BACKUP ~weidu_external/cd_appraiser/backup~ // location to store files for
+SUPPORT ~https://www.gibberlings3.net/forums/forum/28-miscellaneous-released-mods/~ // URL displayed if install fails
 AUTO_EVAL_STRINGS
 
 ALWAYS
 
   ACTION_IF ((FILE_EXISTS ~dlc/sod-dlc.zip~) OR (FILE_EXISTS ~sod-dlc.zip~)) THEN BEGIN FAIL @1001 END // DLC Merge check
+  
+  ACTION_IF GAME_IS ~bgee bg2ee iwdee eet~ BEGIN // ee games
 
-  // convert strings to UTF-8 for BGEE/BG2EE
-  ACTION_DEFINE_ARRAY cdreload BEGIN game_strings END
-  ACTION_DEFINE_ARRAY cdnoconvert BEGIN weidu game_strings_ee game_strings_oiwd game_strings_iwd2 END
-  LAF HANDLE_CHARSETS INT_VAR infer_charsets = 1 STR_VAR tra_path = ~cd_appraiser/lang~ noconvert_array = cdnoconvert reload_array = cdreload END
+    OUTER_SET enhanced_edition = 1 
+    OUTER_SPRINT ~tra_location~ ~cd_appraiser/lang~
+
+  END ELSE BEGIN
+
+    OUTER_SET enhanced_edition = 0
+    OUTER_SPRINT ~tra_location~ ~weidu_external/cd_appraiser/lang~
+
+    // convert strings from UTF-8 for originals
+    ACTION_DEFINE_ARRAY cdreload BEGIN game_strings END
+    ACTION_DEFINE_ARRAY cdnoconvert BEGIN weidu game_strings_ee game_strings_oiwd game_strings_iwd2 END
+    LAF HANDLE_CHARSETS INT_VAR from_utf8 = 1 infer_charsets = 1 
+                        STR_VAR default_language = ~english~ tra_path = ~cd_appraiser/lang~ out_path = ~weidu_external/cd_appraiser/lang~ noconvert_array = cdnoconvert reload_array = cdreload END
+
+  END  
     
 END
 
-VERSION ~v2~
+VERSION ~v3~
 
 README ~cd_appraiser/lang/%LANGUAGE%/readme-cd_appraiser.html~ ~cd_appraiser/readme-cd_appraiser.html~
+
+AUTO_TRA ~%tra_location%/%s~
 
 LANGUAGE
   ~English~
@@ -35,10 +50,8 @@ BEGIN @1000
 REQUIRE_PREDICATE !GAME_IS ~pst pstee~ @1002
 LABEL ~cd_bardic_appraisal~
 
-MKDIR ~weidu_external/cd_appraiser~
-
 // strings with utf-8 characters for matching
-ACTION_IF GAME_IS ~bgee bg2ee eet iwdee~ BEGIN
+ACTION_IF enhanced_edition BEGIN
   
   LOAD_TRA ~cd_appraiser/lang/%LANGUAGE%/game_strings_ee.tra~
   
@@ -385,7 +398,7 @@ COPY_EXISTING_REGEXP GLOB ~^.+\.itm$~ ~override~
       SET type_name = $cd_valid_types("%item_type%")
       READ_LONG 0x0c string
       PATCH_IF NOT (string >= 0 && string < 9999999) BEGIN READ_LONG 0x08 string END // try unidentified name if identified name invalid
-      PATCH_IF (string >= 0 && string < 9999999) BEGIN                               // skip entirely if unidentified is also an invlaid string
+      PATCH_IF (string >= 0 && string < 9999999) BEGIN                               // skip entirely if unidentified is also an invalid string
         READ_LONG 0x34 price
         SET critical_item = 0
         PATCH_IF ((flags & BIT0) = BIT0) BEGIN SET critical_item = 1 END
