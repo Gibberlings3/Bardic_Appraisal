@@ -275,6 +275,11 @@ END ELSE BEGIN
   END
   
   ACTION_IF !GAME_IS ~iwd2~ BEGIN  
+    
+    OUTER_SET check_mng = 0
+    ACTION_IF (FILE_EXISTS_IN_GAME ~d5__bards.d5~) BEGIN 
+      OUTER_SET check_mng = 1
+    END  
       
     // add kit tables dynamically by reading kitlist
     COPY_EXISTING ~kitlist.2da~ ~override~
@@ -286,24 +291,66 @@ END ELSE BEGIN
           READ_2DA_ENTRY index 5 9 clab
           DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN "%clab%" => "%desc%" END
         END  
+        PATCH_IF check_mng BEGIN // might n' guile's multiclass bard kits 
+          READ_2DA_ENTRY index 1 9 kitname
+          PATCH_IF (("%kitname%" STRING_COMPARE_CASE "D5_BARD" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_BLADE" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_JESTER" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_SKALD" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_GALLANT" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_MEISTER" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_JINXER" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_ELEGIST" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_AGENT" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_LORESINGER" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_LORESINGER_CT" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_HEXBLADE" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_HERALD" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_WHISTLER" = 0) OR
+                    ("%kitname%" STRING_COMPARE_CASE "D5_BLADESINGER" = 0)) BEGIN
+            READ_2DA_ENTRY index 4 9 desc
+            READ_2DA_ENTRY index 5 9 clab
+            DEFINE_ASSOCIATIVE_ARRAY cd_bard_clabs BEGIN "%clab%" => "%desc%" END
+          END
+        END          
       END
       BUT_ONLY
   
   END  
       
   ACTION_PHP_EACH cd_bard_clabs AS clab => desc_strref BEGIN 
-    
+  
     ACTION_IF FILE_EXISTS_IN_GAME ~%clab%.2da~ BEGIN 
-      APPEND ~%clab%.2da~ ~ABILITYX GA_cdapprai CDREPLACE~ UNLESS ~GA_CDAPPRAI~
-
-      COPY_EXISTING ~%clab%.2da~ ~override~
+  
+      COPY_EXISTING ~%clab%.2da~ ~override~ // first look for an unused entry in the level 1 column
         COUNT_2DA_COLS cols
-        FOR (index = 3 ; index < cols ; ++index) BEGIN
-          REPLACE_TEXTUALLY ~CDREPLACE~ ~**** CDREPLACE~
-        END
-        REPLACE_TEXTUALLY ~CDREPLACE~ ~****~
-        PRETTY_PRINT_2DA
+        COUNT_2DA_ROWS cols rows
+        SET added = 0
+        FOR (row = 0 ; row < rows ; ++row) BEGIN
+          READ_2DA_ENTRY row 1 cols entry
+          PATCH_IF ("%entry%" STRING_COMPARE_CASE "****" = 0) BEGIN // if blank entry in the column
+            SET added = 1
+            SET_2DA_ENTRY row 1 cols ~GA_cdapprai~
+            SET row = rows  // kill all loops
+          END // end P_I match            
+        END // end row loop     
+        PRETTY_PRINT_2DA      
         BUT_ONLY
+    
+      
+      ACTION_IF !added BEGIN // if no unused entry in the first column, add a row
+      
+        APPEND ~%clab%.2da~ ~ABILITYX GA_cdapprai CDREPLACE~ UNLESS ~GA_CDAPPRAI~
+
+        COPY_EXISTING ~%clab%.2da~ ~override~
+          FOR (index = 3 ; index < cols ; ++index) BEGIN // already have cols from previous copy
+            REPLACE_TEXTUALLY ~CDREPLACE~ ~**** CDREPLACE~
+          END
+          REPLACE_TEXTUALLY ~CDREPLACE~ ~****~
+          PRETTY_PRINT_2DA
+          BUT_ONLY
+
+      END    
    
       ACTION_GET_STRREF desc_strref desc
       OUTER_PATCH_SAVE desc "%desc%" BEGIN
